@@ -3,6 +3,8 @@ import datetime as dt
 import pytz
 import csv
 import os
+import re
+import collections
 
 def __check_for_log():
     """
@@ -15,12 +17,14 @@ def __check_for_log():
             itemwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
             itemwriter.writeheader()
 
+            
 def __clear():
     """
     Clears the terminal screen.
     """
     os.system("cls" if os.name == "nt" else "clear")
 
+    
 def __input_menu():
     __clear()
     task_name = input('Enter task name: ')
@@ -46,43 +50,135 @@ def __input_menu():
         })
     __main_menu()
 
-def __list_printout(search_param):
-    __clear()
-    # takes in a search type perameter (by date, time spent, pattern)
-    # prints out a list of dates with unique number identifiers
-    pass
 
-def __entry_printout():
-    __clear()
-    pass
+def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, regex=None):
+    with open('work_log.csv',newline='') as csvfile:
+        logreader = csv.DictReader(csvfile, delimiter=',')
+        rows = list(logreader)
+        
+        if search_param == 'date':
+            param_list = []
+            for row in rows:
+                param_list.append(row['task_date'])
+            print('Task Date \n---------')
+            for date in set(param_list):
+                print(date)
+                
+        elif search_param == 'exact_date':
+            __clear()
+            print(' ', date_choice, 'Tasks', '\n', '-'*16)
+            count = 0
+            for row in rows:
+                if row['task_date'] == date_choice:
+                    print('Time:', row['task_time'], '\n', 
+                          'Name:', row['task_name'], '\n', 
+                          'Time to Complete:', row['task_minutes'], 'Minutes', '\n', 
+                          'Note:', row['task_note'], '\n')
+                    count += 1
+            if count == 0:
+                print('\nThere are no log entries for {}'.format(date_choice))
+                input('Please try entering another date.')
+                __date_search()
+        
+        elif search_param == 'time':
+            param_list = []
+            for row in rows:
+                param_list.append(float(row['task_minutes']))
+            print('Task Minutes \n---------')
+            for time in sorted(set(param_list)):
+                print(time, 'min')
+                    
+        elif search_param == 'comp_time':
+            __clear()
+            print(minutes, 'Minute Tasks', '\n', '-'*14)
+            count = 0
+            for row in rows:
+                if row['task_minutes'] == minutes:
+                    print('Date/Time:', row['task_date'], row['task_time'], '\n',
+                          'Name:', row['task_name'], '\n', 
+                          'Note:', row['task_note'], '\n')
+                    count += 1
+            if count == 0:
+                print('\nThere are no log entries with a completetion time of {} minutes'.format(minutes))
+                input('Please try again.')
+                __time_search()
+                
+        elif search_param == 'search_term':
+            __clear()
+            print(' Tasks with:', keywords, '\n', '-'*(11+len(keywords)))
+            count = 0
+            for row in rows:
+                if keywords in row['task_name'] or keywords in row['task_note']:
+                    print('Date/Time:', row['task_date'], row['task_time'], '\n',
+                          'Name:', row['task_name'], '\n',
+                          'Time to Complete:', row['task_minutes'], 'Minutes', '\n',
+                          'Note:', row['task_note'], '\n')
+                    count += 1
+            if count == 0:
+                print('\nThere are no log entries that contain "{}"'.format(keywords))
+                input('Please try again.')
+                __exact_search()
+                
+        elif search_param == 'pattern':
+            __clear()
+            print(' Tasks with: "{}" pattern\n'.format(regex), '-'*(22+len(regex)))
+            count = 0
+            for row in rows:
+                if re.search(regex, row['task_name']) or re.search(regex, row['task_note']):
+                    print('Date/Time:', row['task_date'], row['task_time'], '\n',
+                          'Name:', row['task_name'], '\n',
+                          'Time to Complete:', row['task_minutes'], 'Minutes', '\n',
+                          'Note:', row['task_note'], '\n')
+                    count += 1
+            if count == 0:
+                print('\nThere are no log entries that contain "{}" regex pattern'.format(regex))
+                input('Please try again.')
+                __pattern_search()
+            
 
 def __date_search():
     __clear()
-    # provide a list of dates
-    date_choice = input('Choose a date from above: ')
-    # returns all entries with date_choice
+    __search_csv('date')
+    date_choice = input('\nChoose a date from above: ')
+    if not re.search(r'\d\d\/\d\d/\d\d\d\d', date_choice):
+        __clear()
+        input('The date entered was not in the correct format, please try again.')
+        __date_search()
+    else:
+        __search_csv('exact_date', date_choice=date_choice)
+    input('\nPress "ENTER" to return to search menu.')
+    __search_menu()
 
 def __time_search():
     __clear()
-    time_spent = input('Please enter the number of minutes you would like to search by: ')
-    # user enters a number for min spent on task
-    # return a list of entries
-    # user picks from list
+    __search_csv('time')
+    try:
+        time_spent = input('\nPlease enter the number of minutes you would like to search by: ')
+        float(time_spent)
+    except ValueError:
+        __clear()
+        input('Please a positive numerical value.')
+        __time_search()
+    else:
+        __search_csv('comp_time', minutes=time_spent)
+    input('\nPress "ENTER" to return to search menu.')
+    __search_menu()
+
     
 def __exact_search():
     __clear()
     usr_str = input('Please enter the keyword or phrase you would to search by: ')
-    # user enters a str 
-    # return a list of entries containing all of such string
-    # user picks from list
+    __search_csv('search_term', keywords=usr_str)
+    input('\nPress "ENTER" to return to search menu.')
+    __search_menu()
+
 
 def __pattern_search():
     __clear()
-    pattern = input('Please enter a valid Regex Pattern to search by: ')
-    # searches csv with regex, and returns a list of entries
-    # if list is empty the user is alerted and presented with an option to return to 
-    # try another regex search, return to search menu, or exit.
-    # user picks from list
+    regex = input('Please enter a valid Regex Pattern to search by: ')
+    __search_csv('pattern', regex=regex)
+    input('\nPress "ENTER" to return to search menu.')
+    __search_menu()
 
 def __search_menu():
     __clear()
@@ -112,7 +208,7 @@ def __search_menu():
     else:
         input('The input provided does not match a menu option, please try again. ')
         __search_menu()
-    
+        
 
 def __main_menu():
     __clear()
@@ -134,6 +230,8 @@ def __main_menu():
         input('The input provided does not match a menu option, please try again. ')
         __main_menu()
 
+
 if __name__ == '__main__':
     __check_for_log()
     __main_menu()
+
