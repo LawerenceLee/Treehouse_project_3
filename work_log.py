@@ -1,10 +1,9 @@
 # work_log.py
 import datetime as dt
-import pytz
 import csv
 import os
 import re
-import collections
+
 
 def __check_for_log():
     """
@@ -29,7 +28,13 @@ def __input_menu():
     __clear()
     task_name = input('Enter task name: ')
     __clear()
-    task_time = input('Time to complete task in minutes: ')
+    try:
+        task_time = input('Time to complete task in minutes (integers only): ')
+        int(task_time)
+    except ValueError:
+        __clear()
+        input('Time to complete must be a whole number! ')
+        __input_menu()
     task_note = ''
     __clear()
     add_note_quest = input('Would you like to add any additional notes [y/N]: ').upper()
@@ -51,7 +56,43 @@ def __input_menu():
     __main_menu()
 
 
-def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, regex=None):
+def record_print(cata_list ,index):
+    __clear()
+    print('Date/Time:',cata_list[index]['task_date'], cata_list[index]['task_time'], '\n', 
+          'Name:', cata_list[index]['task_name'], '\n', 
+          'Time to Complete:', cata_list[index]['task_minutes'], 'Minutes', '\n', 
+          'Note:', cata_list[index]['task_note'], '\n')
+
+def page_thru(var_dict):
+    index = 0
+    while True:
+        page_option = input('[F]orward, [B]ack, [E]dit, [S]earch Menu: ').upper()
+        if page_option == 'F':
+            try:
+                index += 1
+                record_print(var_dict, index)
+            except KeyError:
+                input('Last Record')
+                index -= 1
+                record_print(var_dict, index)
+        elif page_option == 'B':
+            try:
+                index -= 1
+                record_print(var_dict, index)
+            except KeyError:
+                input('First Record')
+                index += 1
+                record_print(var_dict, index)
+        elif page_option == 'E':
+            pass
+        elif page_option == 'S':
+            break
+        else:
+            __clear()
+            input('That is not a valid choice ')
+    __search_menu()
+    
+def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, regex=None, start_date=None, end_date=None):
     with open('work_log.csv',newline='') as csvfile:
         logreader = csv.DictReader(csvfile, delimiter=',')
         rows = list(logreader)
@@ -65,75 +106,90 @@ def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, re
                 print(date)
                 
         elif search_param == 'exact_date':
-            __clear()
-            print(' ', date_choice, 'Tasks', '\n', '-'*16)
+            date_list = []
             count = 0
             for row in rows:
                 if row['task_date'] == date_choice:
-                    print('Time:', row['task_time'], '\n', 
-                          'Name:', row['task_name'], '\n', 
-                          'Time to Complete:', row['task_minutes'], 'Minutes', '\n', 
-                          'Note:', row['task_note'], '\n')
+                    date_list.append(row)
                     count += 1
             if count == 0:
                 print('\nThere are no log entries for {}'.format(date_choice))
                 input('Please try entering another date.')
                 __date_search()
-        
+            date_dict = dict(enumerate(date_list))
+            record_print(date_dict, 0)
+            page_thru(date_dict)
+            
+        elif search_param == 'date_range':
+            date_range_list = []
+            count = 0
+            for row in rows:
+                if dt.datetime.strptime(row['task_date'], '%m/%d/%Y') >= start_date and dt.datetime.strptime(row['task_date'], '%m/%d/%Y') <= end_date:
+                    date_range_list.append(row)
+                    count += 1
+            if count == 0:
+                print('\nThere are no log entries between {} - {}'.format(start_date, end_date))
+                input('Please try entering another set of dates.')
+                __date_range_search()
+            date_range_dict = dict(enumerate(date_range_list))
+            record_print(date_range_dict, 0)
+            page_thru(date_range_dict)
+            
         elif search_param == 'time':
             param_list = []
             for row in rows:
-                param_list.append(float(row['task_minutes']))
+                param_list.append(int(row['task_minutes']))
             print('Task Minutes \n---------')
             for time in sorted(set(param_list)):
-                print(time, 'min')
+                print(time, 'min')               
                     
         elif search_param == 'comp_time':
-            __clear()
-            print(minutes, 'Minute Tasks', '\n', '-'*14)
+            minutes_list = []
             count = 0
             for row in rows:
                 if row['task_minutes'] == minutes:
-                    print('Date/Time:', row['task_date'], row['task_time'], '\n',
-                          'Name:', row['task_name'], '\n', 
-                          'Note:', row['task_note'], '\n')
+                    minutes_list.append(row)
                     count += 1
             if count == 0:
                 print('\nThere are no log entries with a completetion time of {} minutes'.format(minutes))
                 input('Please try again.')
                 __time_search()
-                
+            minute_dict = dict(enumerate(minutes_list))
+            record_print(minute_dict, 0)
+            page_thru(minute_dict)
+
         elif search_param == 'search_term':
-            __clear()
-            print(' Tasks with:', keywords, '\n', '-'*(11+len(keywords)))
+            keyword_list = []
             count = 0
             for row in rows:
                 if keywords in row['task_name'] or keywords in row['task_note']:
-                    print('Date/Time:', row['task_date'], row['task_time'], '\n',
-                          'Name:', row['task_name'], '\n',
-                          'Time to Complete:', row['task_minutes'], 'Minutes', '\n',
-                          'Note:', row['task_note'], '\n')
+                    keyword_list.append(row)
                     count += 1
             if count == 0:
                 print('\nThere are no log entries that contain "{}"'.format(keywords))
-                input('Please try again.')
+                quest_to_menu = input('\n[S]earch Menu, "Enter" for try again: ').upper()
+                if quest_to_menu == 'S':
+                    __search_menu()
                 __exact_search()
-                
+            keyword_dict = dict(enumerate(keyword_list))
+            record_print(keyword_dict, 0)
+            page_thru(keyword_dict)
+
+
         elif search_param == 'pattern':
-            __clear()
-            print(' Tasks with: "{}" pattern\n'.format(regex), '-'*(22+len(regex)))
+            pattern_list = []
             count = 0
             for row in rows:
                 if re.search(regex, row['task_name']) or re.search(regex, row['task_note']):
-                    print('Date/Time:', row['task_date'], row['task_time'], '\n',
-                          'Name:', row['task_name'], '\n',
-                          'Time to Complete:', row['task_minutes'], 'Minutes', '\n',
-                          'Note:', row['task_note'], '\n')
+                    pattern_list.append(row)
                     count += 1
             if count == 0:
                 print('\nThere are no log entries that contain "{}" regex pattern'.format(regex))
                 input('Please try again.')
                 __pattern_search()
+            pattern_dict = dict(enumerate(pattern_list))
+            record_print(pattern_dict, 0)
+            page_thru(pattern_dict)
             
 
 def __date_search():
@@ -146,39 +202,45 @@ def __date_search():
         __date_search()
     else:
         __search_csv('exact_date', date_choice=date_choice)
-    input('\nPress "ENTER" to return to search menu.')
-    __search_menu()
+
+def __date_range_search():
+    __clear()
+    start_date = input('Enter a starting date for search (using MM/DD/YYYY): ')
+    end_date = input('Enter a ending date for search (using MM/DD/YYYY): ')
+    if not re.search(r'\d\d\/\d\d/\d\d\d\d', start_date) or not re.search(r'\d\d\/\d\d/\d\d\d\d', end_date):
+        __clear()
+        input('Either the start or end date was not entered in the correct format, please try again.')
+        __date_range_search()
+    else:
+        start_date = dt.datetime.strptime(start_date, '%m/%d/%Y')
+        end_date = dt.datetime.strptime(end_date, '%m/%d/%Y')
+        __search_csv('date_range', start_date=start_date, end_date=end_date)
 
 def __time_search():
     __clear()
     __search_csv('time')
     try:
-        time_spent = input('\nPlease enter the number of minutes you would like to search by: ')
-        float(time_spent)
+        time_spent = input('\nPlease enter the number of minutes you would like to search by (integers only): ')
+        int(time_spent)
     except ValueError:
         __clear()
         input('Please a positive numerical value.')
         __time_search()
     else:
         __search_csv('comp_time', minutes=time_spent)
-    input('\nPress "ENTER" to return to search menu.')
-    __search_menu()
-
+    
     
 def __exact_search():
     __clear()
     usr_str = input('Please enter the keyword or phrase you would to search by: ')
     __search_csv('search_term', keywords=usr_str)
-    input('\nPress "ENTER" to return to search menu.')
-    __search_menu()
-
+    
 
 def __pattern_search():
     __clear()
     regex = input('Please enter a valid Regex Pattern to search by: ')
     __search_csv('pattern', regex=regex)
-    input('\nPress "ENTER" to return to search menu.')
-    __search_menu()
+    
 
 def __search_menu():
     __clear()
@@ -186,6 +248,7 @@ def __search_menu():
     print("""
     -- Options --
     [D] : Search by Date
+    [G] : Search by Date Range
     [T] : Search by Time Spent
     [K] : Search with specific Keyword or phrase
     [R] : Search with a Regular Expression
@@ -195,6 +258,8 @@ def __search_menu():
     search_choice = input("Please select an option from above: ").upper()
     if search_choice == 'D':
         __date_search()
+    elif search_choice == 'G':
+        __date_range_search()
     elif search_choice == 'T':
         __time_search()
     elif search_choice == 'K':
