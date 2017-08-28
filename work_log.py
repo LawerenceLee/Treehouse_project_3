@@ -4,6 +4,7 @@ import csv
 import os
 import re
 
+
 def __check_for_log():
     """
     Checks for work_log.csv in the current directory, and creates
@@ -15,100 +16,34 @@ def __check_for_log():
             itemwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
             itemwriter.writeheader()
 
-            
+
 def __clear():
     """
     Clears the terminal screen.
     """
     os.system("cls" if os.name == "nt" else "clear")
 
-# Record Input Function
-########################################################################################
-    
-def __input_menu():
-    __clear()
-    task_name = input('Enter task name: ')
-    __clear()
-    try:
-        task_time = input('Time to complete task in minutes (integers only): ')
-        int(task_time)
-    except ValueError:
-        __clear()
-        input('Time to complete must be a whole number! ')
-        __input_menu()
-    task_note = ''
-    __clear()
-    add_note_quest = input('Would you like to add any additional notes [y/N]: ').upper()
-    if add_note_quest == 'Y':
-        __clear()
-        task_note = input('Enter additional notes: ') 
-    
-    with open('work_log.csv', 'a') as csvfile:
-        fieldnames = ['task_date', 'task_time', 'task_name', 'task_minutes', 'task_note']
-        itemwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        
-        itemwriter.writerow({
-            'task_date': dt.datetime.now().strftime('%m/%d/%Y'),
-            'task_time': dt.datetime.now().strftime('%H:%M'),
-            'task_name': task_name,
-            'task_minutes': task_time,
-            'task_note': task_note
-        })
-    __main_menu()
-    
-
-# Record Viewing Functions 
-########################################################################################
-
-def record_print(catagory_list, index):
-    __clear()
-    print('Date/Time:', catagory_list[index]['task_date'], catagory_list[index]['task_time'], '\n', 
-          'Name:', catagory_list[index]['task_name'], '\n', 
-          'Time to Complete:', catagory_list[index]['task_minutes'], 'Minutes', '\n', 
-          'Note:', catagory_list[index]['task_note'], '\n')
-
-def page_thru(var_dict):
-    index = 0
-    while True:
-        page_option = input('[F]orward, [B]ack, [E]dit/Delete, [S]earch Menu: ').upper()
-        if page_option == 'F':
-            try:
-                index += 1
-                record_print(var_dict, index)
-            except KeyError:
-                input('Last Record')
-                index -= 1
-                record_print(var_dict, index)
-        elif page_option == 'B':
-            try:
-                index -= 1
-                record_print(var_dict, index)
-            except KeyError:
-                input('First Record')
-                index += 1
-                record_print(var_dict, index)
-        elif page_option == 'E':
-            __editing_csv(var_dict, index)
-            break
-        elif page_option == 'S':
-            break
-    __search_menu()
-    
-
 # Editing Records
-########################################################################################
+###############################################################################
+
 
 def __editing_csv(var_dict, index):
+    """
+    The function copies all records other than the one passed as an argument to a
+    new csv file. The function will add the edited record if that option is
+    selected to the new csv file. Upon completion of the aformentioned, the
+    function deletes the original csv, and renames the new csv to match
+    the original filename.
+    """
     with open('work_log.csv', mode='r') as input_file, open('edited_work_log.csv', mode='w') as output_file:
         fieldnames = ['task_date', 'task_time', 'task_name', 'task_minutes', 'task_note']
         log_writer = csv.DictWriter(output_file, fieldnames=fieldnames)
-        
+
         log_writer.writeheader()
-        
-        
+
         for row in list(csv.DictReader(input_file, delimiter=',')):
             if var_dict[index]['task_note'] == row['task_note'] and var_dict[index]['task_name'] == row['task_name']:
-                edit_quest = input('Would you simply like to simply [D]elete the record, or [E]dit it? ').upper()
+                edit_quest = input('\nWould you simply like to simply [D]elete the record, or [E]dit it? ').upper()
                 if edit_quest == 'D':
                     pass
                 else:
@@ -117,20 +52,20 @@ def __editing_csv(var_dict, index):
                         edited_name = input('Enter your new task name: ')
                     else:
                         edited_name = var_dict[index]['task_name']
-                        
+
                     minutes_quest = input('Do you wish to change the number of minutes to complete the task? [y/N]').upper()
                     if minutes_quest == 'Y':
                         edited_minutes = input('Enter the new number of minutes for your task (integers only): ')
                         edited_minutes = int(edited_minutes)
                     else:
                         edited_minutes = var_dict[index]['task_minutes']
-                        
+
                     note_quest = input('Would you like to edit your note from this task? [y/N] ').upper()
                     if note_quest == 'Y':
                         edited_note = input('Enter your new note: ')
                     else:
                         edited_note = var_dict[index]['task_note']
-                        
+
                     log_writer.writerow({
                                     'task_date': var_dict[index]['task_date'],
                                     'task_time': var_dict[index]['task_time'],
@@ -146,25 +81,116 @@ def __editing_csv(var_dict, index):
                                     'task_minutes': row['task_minutes'],
                                     'task_note': row['task_note']
                                     })
-                
+
         for filename in os.listdir(os.getcwd()):
             if filename == 'work_log.csv':
                 os.remove('work_log.csv')
         for filename in os.listdir(os.getcwd()):
             if filename == 'edited_work_log.csv':
                 os.renames('edited_work_log.csv', 'work_log.csv')
-                
 
-    
+
+# Record Input Function
+###############################################################################
+
+def __input_menu():
+    """
+    This function prompts user for the various details to create a record of a
+    task, and then saves them to the csv file associated with the program.
+    """
+    __clear()
+    task_name = input('Enter task name: ')
+    __clear()
+    try:
+        task_time = input('Time to complete task in minutes (integers only): ')
+        int(task_time)
+    except ValueError:
+        __clear()
+        input('Time to complete must be a whole number! ')
+        __input_menu()
+    task_note = ''
+    __clear()
+    add_note_quest = input('Would you like to add any additional notes [y/N]: ').upper()
+    if add_note_quest == 'Y':
+        __clear()
+        task_note = input('Enter additional notes: ')
+
+    with open('work_log.csv', 'a') as csvfile:
+        fieldnames = ['task_date', 'task_time', 'task_name', 'task_minutes', 'task_note']
+        itemwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        itemwriter.writerow({
+            'task_date': dt.datetime.now().strftime('%m/%d/%Y'),
+            'task_time': dt.datetime.now().strftime('%H:%M'),
+            'task_name': task_name,
+            'task_minutes': task_time,
+            'task_note': task_note
+        })
+    __main_menu()
+
+
+# Record Viewing Functions
+###############################################################################
+
+def record_print(catagory_list, index):
+    """
+    This function prints out the details of the task record passed as an
+    argument, as well as the number of records in the ordered dictionary passed
+    to the function.
+    """
+    __clear()
+    print('Date/Time:', catagory_list[index]['task_date'], catagory_list[index]['task_time'], '\n',
+          'Name:', catagory_list[index]['task_name'], '\n',
+          'Time to Complete:', catagory_list[index]['task_minutes'], 'Minutes', '\n',
+          'Note:', catagory_list[index]['task_note'], '\n')
+    print('{}/{} Records\n'.format(index+1, len(catagory_list)))
+
+
+def page_thru(var_dict):
+    """
+    This function facilitates the paging through the various records matching
+    the search query performed earlier while using the program. It also allows
+    user to enter an editing interface for the current record being displayed.
+    """
+    index = 0
+    while True:
+        page_option = input('[F]orward, [B]ack, [E]dit/Delete, [S]earch Menu: ').upper()
+        if page_option == 'F':
+            try:
+                index += 1
+                record_print(var_dict, index)
+            except KeyError:
+                input("You've reached the Last Record \n\nPress ENTER to return to it.")
+                index -= 1
+                record_print(var_dict, index)
+        elif page_option == 'B':
+            try:
+                index -= 1
+                record_print(var_dict, index)
+            except KeyError:
+                input("You've reached the Beginning of the Records \n\nPress ENTER to return to the First Record.")
+                index += 1
+                record_print(var_dict, index)
+        elif page_option == 'E':
+            __editing_csv(var_dict, index)
+            break
+        elif page_option == 'S':
+            break
+    __search_menu()
+
 
 # Finding Records in CSV
-########################################################################################
-    
+###############################################################################
+
 def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, regex=None, start_date=None, end_date=None):
+    """
+    This function facilitates the various ways to perform queries of the csv file
+    that contains the records of work tasks.
+    """
     with open('work_log.csv', newline='') as csvfile:
         logreader = csv.DictReader(csvfile, delimiter=',')
         rows = list(logreader)
-        
+
         if search_param == 'date':
             param_list = []
             for row in rows:
@@ -172,7 +198,7 @@ def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, re
             print('Task Date \n---------')
             for date in sorted(set(param_list)):
                 print(date.strftime('%m/%d/%Y'))
-                
+
         elif search_param == 'exact_date':
             date_list = []
             count = 0
@@ -187,7 +213,7 @@ def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, re
             date_dict = dict(enumerate(date_list))
             record_print(date_dict, 0)
             page_thru(date_dict)
-            
+
         elif search_param == 'date_range':
             date_range_list = []
             count = 0
@@ -202,15 +228,15 @@ def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, re
             date_range_dict = dict(enumerate(date_range_list))
             record_print(date_range_dict, 0)
             page_thru(date_range_dict)
-            
+
         elif search_param == 'time':
             param_list = []
             for row in rows:
                 param_list.append(int(row['task_minutes']))
             print('Task Minutes \n---------')
             for time in sorted(set(param_list)):
-                print(time, 'min')               
-                    
+                print(time, 'min')
+
         elif search_param == 'comp_time':
             minutes_list = []
             count = 0
@@ -243,7 +269,6 @@ def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, re
             record_print(keyword_dict, 0)
             page_thru(keyword_dict)
 
-
         elif search_param == 'pattern':
             pattern_list = []
             count = 0
@@ -260,9 +285,14 @@ def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, re
             page_thru(pattern_dict)
 
 # Search Functions
-########################################################################################
+###############################################################################
+
 
 def __date_search():
+    """
+    This function presents users a list of available dates in the csv file,
+    and allows them to choose one.
+    """
     __clear()
     __search_csv('date')
     date_choice = input('\nChoose a date from above: ')
@@ -273,7 +303,12 @@ def __date_search():
     else:
         __search_csv('exact_date', date_choice=date_choice)
 
+
 def __date_range_search():
+    """
+    This function allows users to specify a date range to query the csv file
+    with.
+    """
     __clear()
     start_date = input('Enter a starting date for search (using MM/DD/YYYY): ')
     end_date = input('Enter a ending date for search (using MM/DD/YYYY): ')
@@ -286,7 +321,13 @@ def __date_range_search():
         end_date = dt.datetime.strptime(end_date, '%m/%d/%Y')
         __search_csv('date_range', start_date=start_date, end_date=end_date)
 
+
 def __time_search():
+    """
+    This function allows users to query the csv file by choosing from a list of
+    times (in minutes) of various task completion times that exist in the csv
+    file.
+    """
     __clear()
     __search_csv('time')
     try:
@@ -298,23 +339,34 @@ def __time_search():
         __time_search()
     else:
         __search_csv('comp_time', minutes=time_spent)
-    
-    
+
+
 def __exact_search():
+    """
+    Function lets users query csv file with a specific phrase or keyword.
+    """
     __clear()
     usr_str = input('Please enter the keyword or phrase you would to search by: ')
     __search_csv('search_term', keywords=usr_str)
-    
+
 
 def __pattern_search():
+    """
+    Function lets users query csv file with a specific regex.
+    """
     __clear()
     regex = input('Please enter a valid Regex Pattern to search by: ')
     __search_csv('pattern', regex=regex)
 
 # Menus
-########################################################################################
-    
+###############################################################################
+
+
 def __search_menu():
+    """
+    Function presents users with the various methods they can use to query
+    the csv file, and allows them to choose one.
+    """
     __clear()
     print('SEARCH MENU')
     print("""
@@ -345,9 +397,13 @@ def __search_menu():
     else:
         input('The input provided does not match a menu option, please try again. ')
         __search_menu()
-        
+
 
 def __main_menu():
+    """
+    Function allows users to choose between adding new records or
+    perusing/editing old ones.
+    """
     __clear()
     print('WORK LOGGER')
     print("""
@@ -367,9 +423,8 @@ def __main_menu():
         input('The input provided does not match a menu option, please try again. ')
         __main_menu()
 
-########################################################################################
+###############################################################################
 
 if __name__ == '__main__':
     __check_for_log()
     __main_menu()
-
