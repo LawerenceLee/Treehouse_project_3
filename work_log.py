@@ -49,6 +49,18 @@ def __editing_csv(var_dict, index):
                     input('Entry will be deleted. \n\nPress ENTER to Continue. ')
                     pass
                 else:
+                    date_quest = input('Do you wish to change the date of the task? [y/N] ').upper()
+                    if date_quest == 'Y':
+                        edited_date = input("Enter your task's new date: ")
+                    else:
+                        edited_date = var_dict[index]['task_date']
+                        
+                    time_quest = input('Do you wish to change the time of the task? [y/N] ').upper()
+                    if time_quest == 'Y':
+                        edited_time = input("Enter your task's new time (use Military Time): ")
+                    else:
+                        edited_time = var_dict[index]['task_time']
+                        
                     name_quest = input('Do you wish to change the name of the task? [y/N] ').upper()
                     if name_quest == 'Y':
                         edited_name = input('Enter your new task name: ')
@@ -69,8 +81,8 @@ def __editing_csv(var_dict, index):
                         edited_note = var_dict[index]['task_note']
 
                     log_writer.writerow({
-                                    'task_date': var_dict[index]['task_date'],
-                                    'task_time': var_dict[index]['task_time'],
+                                    'task_date': edited_date,
+                                    'task_time': edited_time,
                                     'task_name': edited_name,
                                     'task_minutes': edited_minutes,
                                     'task_note': edited_note
@@ -427,3 +439,4 @@ def __main_menu():
 if __name__ == '__main__':
     __check_for_log()
     __main_menu()
+
