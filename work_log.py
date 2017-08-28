@@ -4,7 +4,6 @@ import csv
 import os
 import re
 
-
 def __check_for_log():
     """
     Checks for work_log.csv in the current directory, and creates
@@ -23,6 +22,8 @@ def __clear():
     """
     os.system("cls" if os.name == "nt" else "clear")
 
+# Record Input Function
+########################################################################################
     
 def __input_menu():
     __clear()
@@ -55,13 +56,15 @@ def __input_menu():
         })
     __main_menu()
 
+# Record Viewing Functions 
+########################################################################################
 
-def record_print(cata_list ,index):
+def record_print(catagory_list, index):
     __clear()
-    print('Date/Time:',cata_list[index]['task_date'], cata_list[index]['task_time'], '\n', 
-          'Name:', cata_list[index]['task_name'], '\n', 
-          'Time to Complete:', cata_list[index]['task_minutes'], 'Minutes', '\n', 
-          'Note:', cata_list[index]['task_note'], '\n')
+    print('Date/Time:', catagory_list[index]['task_date'], catagory_list[index]['task_time'], '\n', 
+          'Name:', catagory_list[index]['task_name'], '\n', 
+          'Time to Complete:', catagory_list[index]['task_minutes'], 'Minutes', '\n', 
+          'Note:', catagory_list[index]['task_note'], '\n')
 
 def page_thru(var_dict):
     index = 0
@@ -87,23 +90,23 @@ def page_thru(var_dict):
             pass
         elif page_option == 'S':
             break
-        else:
-            __clear()
-            input('That is not a valid choice ')
     __search_menu()
+
+# Finding Records in CSV
+########################################################################################
     
 def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, regex=None, start_date=None, end_date=None):
-    with open('work_log.csv',newline='') as csvfile:
+    with open('work_log.csv', newline='', mode='a') as csvfile:
         logreader = csv.DictReader(csvfile, delimiter=',')
         rows = list(logreader)
         
         if search_param == 'date':
             param_list = []
             for row in rows:
-                param_list.append(row['task_date'])
+                param_list.append(dt.datetime.strptime(row['task_date'], '%m/%d/%Y'))
             print('Task Date \n---------')
-            for date in set(param_list):
-                print(date)
+            for date in sorted(set(param_list)):
+                print(date.strftime('%m/%d/%Y'))
                 
         elif search_param == 'exact_date':
             date_list = []
@@ -190,7 +193,9 @@ def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, re
             pattern_dict = dict(enumerate(pattern_list))
             record_print(pattern_dict, 0)
             page_thru(pattern_dict)
-            
+
+# Search Functions
+########################################################################################
 
 def __date_search():
     __clear()
@@ -240,8 +245,10 @@ def __pattern_search():
     __clear()
     regex = input('Please enter a valid Regex Pattern to search by: ')
     __search_csv('pattern', regex=regex)
-    
 
+# Menus
+########################################################################################
+    
 def __search_menu():
     __clear()
     print('SEARCH MENU')
@@ -295,6 +302,7 @@ def __main_menu():
         input('The input provided does not match a menu option, please try again. ')
         __main_menu()
 
+########################################################################################
 
 if __name__ == '__main__':
     __check_for_log()
