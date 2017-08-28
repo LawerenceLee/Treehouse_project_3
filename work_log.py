@@ -9,7 +9,7 @@ def __check_for_log():
     Checks for work_log.csv in the current directory, and creates
     the csv file with defined fieldnames if it is not found.
     """
-    if 'work_log.csv' not in os.listdir(str(os.getcwd())):
+    if 'work_log.csv' not in os.listdir(os.getcwd()):
         with open('work_log.csv', 'a') as csvfile:
             fieldnames = ['task_date', 'task_time', 'task_name', 'task_minutes', 'task_note']
             itemwriter = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -55,6 +55,7 @@ def __input_menu():
             'task_note': task_note
         })
     __main_menu()
+    
 
 # Record Viewing Functions 
 ########################################################################################
@@ -69,7 +70,7 @@ def record_print(catagory_list, index):
 def page_thru(var_dict):
     index = 0
     while True:
-        page_option = input('[F]orward, [B]ack, [E]dit, [S]earch Menu: ').upper()
+        page_option = input('[F]orward, [B]ack, [E]dit/Delete, [S]earch Menu: ').upper()
         if page_option == 'F':
             try:
                 index += 1
@@ -87,16 +88,80 @@ def page_thru(var_dict):
                 index += 1
                 record_print(var_dict, index)
         elif page_option == 'E':
-            pass
+            __editing_csv(var_dict, index)
+            break
         elif page_option == 'S':
             break
     __search_menu()
+    
+
+# Editing Records
+########################################################################################
+
+def __editing_csv(var_dict, index):
+    with open('work_log.csv', mode='r') as input_file, open('edited_work_log.csv', mode='w') as output_file:
+        fieldnames = ['task_date', 'task_time', 'task_name', 'task_minutes', 'task_note']
+        log_writer = csv.DictWriter(output_file, fieldnames=fieldnames)
+        
+        log_writer.writeheader()
+        
+        
+        for row in list(csv.DictReader(input_file, delimiter=',')):
+            if var_dict[index]['task_note'] == row['task_note'] and var_dict[index]['task_name'] == row['task_name']:
+                edit_quest = input('Would you simply like to simply [D]elete the record, or [E]dit it? ').upper()
+                if edit_quest == 'D':
+                    pass
+                else:
+                    name_quest = input('Do you wish to change the name of the task? [y/N] ').upper()
+                    if name_quest == 'Y':
+                        edited_name = input('Enter your new task name: ')
+                    else:
+                        edited_name = var_dict[index]['task_name']
+                        
+                    minutes_quest = input('Do you wish to change the number of minutes to complete the task? [y/N]').upper()
+                    if minutes_quest == 'Y':
+                        edited_minutes = input('Enter the new number of minutes for your task (integers only): ')
+                        edited_minutes = int(edited_minutes)
+                    else:
+                        edited_minutes = var_dict[index]['task_minutes']
+                        
+                    note_quest = input('Would you like to edit your note from this task? [y/N] ').upper()
+                    if note_quest == 'Y':
+                        edited_note = input('Enter your new note: ')
+                    else:
+                        edited_note = var_dict[index]['task_note']
+                        
+                    log_writer.writerow({
+                                    'task_date': var_dict[index]['task_date'],
+                                    'task_time': var_dict[index]['task_time'],
+                                    'task_name': edited_name,
+                                    'task_minutes': edited_minutes,
+                                    'task_note': edited_note
+                                    })
+            else:
+                log_writer.writerow({
+                                    'task_date': row['task_date'],
+                                    'task_time': row['task_time'],
+                                    'task_name': row['task_name'],
+                                    'task_minutes': row['task_minutes'],
+                                    'task_note': row['task_note']
+                                    })
+                
+        for filename in os.listdir(os.getcwd()):
+            if filename == 'work_log.csv':
+                os.remove('work_log.csv')
+        for filename in os.listdir(os.getcwd()):
+            if filename == 'edited_work_log.csv':
+                os.renames('edited_work_log.csv', 'work_log.csv')
+                
+
+    
 
 # Finding Records in CSV
 ########################################################################################
     
 def __search_csv(search_param, date_choice=None, minutes=None, keywords=None, regex=None, start_date=None, end_date=None):
-    with open('work_log.csv', newline='', mode='a') as csvfile:
+    with open('work_log.csv', newline='') as csvfile:
         logreader = csv.DictReader(csvfile, delimiter=',')
         rows = list(logreader)
         
