@@ -3,6 +3,7 @@ import datetime as dt
 import csv
 import os
 import re
+import sys
 
 
 def __check_for_log():
@@ -45,6 +46,7 @@ def __editing_csv(var_dict, index):
             if var_dict[index]['task_note'] == row['task_note'] and var_dict[index]['task_name'] == row['task_name']:
                 edit_quest = input('\nWould you simply like to simply [D]elete the record, or [E]dit it? ').upper()
                 if edit_quest == 'D':
+                    input('Entry will be deleted. \n\nPress ENTER to Continue. ')
                     pass
                 else:
                     name_quest = input('Do you wish to change the name of the task? [y/N] ').upper()
@@ -53,7 +55,7 @@ def __editing_csv(var_dict, index):
                     else:
                         edited_name = var_dict[index]['task_name']
 
-                    minutes_quest = input('Do you wish to change the number of minutes to complete the task? [y/N]').upper()
+                    minutes_quest = input('Do you wish to change the number of minutes to complete the task? [y/N] ').upper()
                     if minutes_quest == 'Y':
                         edited_minutes = input('Enter the new number of minutes for your task (integers only): ')
                         edited_minutes = int(edited_minutes)
@@ -377,7 +379,6 @@ def __search_menu():
     [K] : Search with specific Keyword or phrase
     [R] : Search with a Regular Expression
     [M] : MAIN MENU
-    [E] : EXIT
     """)
     search_choice = input("Please select an option from above: ").upper()
     if search_choice == 'D':
@@ -392,8 +393,6 @@ def __search_menu():
         __pattern_search()
     elif search_choice == 'M':
         __main_menu()
-    elif search_choice == 'E':
-        exit
     else:
         input('The input provided does not match a menu option, please try again. ')
         __search_menu()
